@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width">
+    <title>offlineAudioContext example</title>
+    <link rel="stylesheet" href="">
+  </head>
+  <body>
+    <button class="play">Play</button>
+    <button class="stop">Stop</button>
+    <button class="length">Length</button>
+    <pre></pre>
+  </body>
+<script>
+
+var audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+var songLength = 0;
+var myBuffer;
+var play = document.querySelector('.play');
+var stop = document.querySelector('.stop');
+
+function getData() {
+  source = audioCtx.createBufferSource();
+  request = new XMLHttpRequest();
+  request.open('GET', 'https://raw.githubusercontent.com/mdn/webaudio-examples/master/offline-audio-context-promise/viper.ogg', true);
+  request.responseType = 'arraybuffer';
+  request.onload = function() {
+    var audioData = request.response;
+    audioCtx.decodeAudioData(audioData, 
+    	function(buffer) { // audiodata gets passed in here, successcallback  
+        myBuffer = buffer;
+        songLength = buffer.duration;
+        source.buffer = myBuffer;
+        source.connect(audioCtx.destination);
+
+        demo();
+    	}, function(e) {"Error with decoding audio data" + e.error} );
+  }
+  request.send();
+}
+
+play.onclick = function() {
+  source.start(0);
+  play.setAttribute('disabled', 'disabled');
+}
+stop.onclick = function() {
+  source.stop(0);
+  play.removeAttribute('disabled');
+}
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function demo() {
+  console.log(songLength)
+  console.log(source.buffer)
+  var total = currentTotal = i = j = 0;
+ 
+  channel = source.buffer.getChannelData(0);
+  var len = source.buffer.length;
+  for (i = 0; i < len; i+=2048) {
+  	currentTotal = 0;
+		for (j = 0; j < 2048; j++) {
+    	currentTotal += Math.abs( channel[i+j] );
+    }
+    if (currentTotal > total) {
+    	total = currentTotal;
+    }
+  }
+  
+  console.log(total);
+  
+  rms = Math.sqrt( total / 2048 )
+  console.log(rms);
+  decibel = 20 * (Math.log(rms) / Math.log(10));
+  console.log(decibel);
+  
+}
+getData();
+
+
+
+</script>
+</html>
